@@ -102,10 +102,25 @@
                             <button class="group relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-slate-500 hover:text-slate-700 hidden sm:inline-flex"><span class="svg-icon" style="-webkit-mask-image:url(svg-icons/star.svg);mask-image:url(svg-icons/star.svg)"></span></button>
                             <button class="group relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-slate-500 hover:text-slate-700 hidden md:inline-flex"><span class="svg-icon" style="-webkit-mask-image:url(svg-icons/calendar.svg);mask-image:url(svg-icons/calendar.svg)"></span></button>
                             <button class="group relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-slate-500 hover:text-slate-700"><i data-lucide="languages" class="h-[22px] w-[22px]"></i></button>
-                            <button class="group relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-slate-500 hover:text-primary transition-colors" title="الإشعارات">
-                                <i data-lucide="bell" class="h-[22px] w-[22px]"></i>
-                                <span class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white shadow-sm transition-transform duration-200 scale-0 origin-center" id="unreadMessagesCount">0</span>
-                            </button>
+                            <div class="relative">
+                                <button onclick="toggleNotificationsDropdown()" class="group relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-slate-500 hover:text-primary transition-colors" title="الإشعارات" id="bellIconBtn">
+                                    <i data-lucide="bell" class="h-[22px] w-[22px]"></i>
+                                    <span class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white shadow-sm transition-transform duration-200 scale-0 origin-center" id="unreadMessagesCount">0</span>
+                                </button>
+                                <!-- Notifications Dropdown -->
+                                <div id="notificationsDropdown" class="absolute top-10 left-0 w-[300px] bg-white border border-slate-200 shadow-xl rounded-xl hidden flex-col z-50 overflow-hidden transform opacity-0 scale-95 transition-all duration-200 origin-top-left">
+                                    <div class="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                        <h3 class="font-bold text-slate-800 text-[13px]">الإشعارات</h3>
+                                        <button onclick="clearNotifications()" class="text-[11px] text-primary hover:underline font-semibold cursor-pointer">تحديد كـ مقروء</button>
+                                    </div>
+                                    <div class="flex-1 overflow-y-auto max-h-[350px] thin-scrollbar flex flex-col" id="notificationsDropdownList">
+                                        <div class="p-6 text-center text-slate-400 text-xs">لا توجد إشعارات جديدة</div>
+                                    </div>
+                                    <div class="p-2 border-t border-slate-100 bg-slate-50 text-center cursor-pointer hover:bg-slate-100 transition-colors">
+                                        <a href="#" class="text-[11px] font-bold text-primary hover:text-blue-700 transition-colors">مشاهدة المزيد</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="hidden items-center gap-2 text-slate-500 md:flex md:gap-6 flex-row">
                             <span class="text-[0.95rem] font-medium leading-none" id="currentTime"></span>
@@ -189,7 +204,7 @@
 </div>
 
 <!-- Toast Container for Notifications -->
-<div id="toastContainer" class="fixed bottom-6 left-6 z-[999] flex flex-col gap-3 pointer-events-none w-80"></div>
+<div id="toastContainer" class="fixed bottom-6 right-6 z-[999] flex flex-col gap-3 pointer-events-none w-80"></div>
 
 <!-- Add Platform Modal -->
 <div id="addPlatformModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300" dir="rtl">
@@ -478,6 +493,7 @@ document.addEventListener('DOMContentLoaded',()=>{applySidebarState();renderChat
 
 // --- Toast Notification Simulator ---
 let unreadCount = 0;
+let notificationsHistory = []; // store objects
 const notificationData = [
     { name: "أحمد عبدالله", text: "مرحباً، هل يمكنني الاستفسار عن باقات الأسعار؟", platform: "whatsapp", icon: BRAND_ICONS.whatsapp, bg: "bg-emerald-100 text-emerald-600" },
     { name: "سارة محمد", text: "شكراً لكم، تم استلام الطلب.", platform: "facebook", icon: BRAND_ICONS.facebook, bg: "bg-blue-100 text-blue-600" },
@@ -485,46 +501,126 @@ const notificationData = [
     { name: "منى علي", text: "متى سيتم توفير المنتج مرة أخرى؟", platform: "telegram", icon: BRAND_ICONS.telegram, bg: "bg-sky-100 text-sky-600" }
 ];
 
+function toggleNotificationsDropdown() {
+    const dropdown = document.getElementById('notificationsDropdown');
+    if (dropdown.classList.contains('hidden')) {
+        dropdown.classList.remove('hidden');
+        setTimeout(() => {
+            dropdown.classList.remove('opacity-0', 'scale-95');
+            dropdown.classList.add('opacity-100', 'scale-100');
+        }, 10);
+        // Reset badge when opened
+        unreadCount = 0;
+        const badge = document.getElementById('unreadMessagesCount');
+        if(badge) {
+            badge.textContent = '0';
+            badge.classList.remove('scale-100', 'scale-125');
+            badge.classList.add('scale-0');
+        }
+    } else {
+        dropdown.classList.remove('opacity-100', 'scale-100');
+        dropdown.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => dropdown.classList.add('hidden'), 200);
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const btn = document.getElementById('bellIconBtn');
+    const dropdown = document.getElementById('notificationsDropdown');
+    if (btn && dropdown && !btn.contains(e.target) && !dropdown.contains(e.target)) {
+        if (!dropdown.classList.contains('hidden')) {
+            dropdown.classList.remove('opacity-100', 'scale-100');
+            dropdown.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => dropdown.classList.add('hidden'), 200);
+        }
+    }
+});
+
+function clearNotifications() {
+    notificationsHistory = [];
+    renderNotificationsDropdown();
+    unreadCount = 0;
+    const badge = document.getElementById('unreadMessagesCount');
+    if(badge) {
+        badge.textContent = '0';
+        badge.classList.remove('scale-100', 'scale-125');
+        badge.classList.add('scale-0');
+    }
+}
+
+function renderNotificationsDropdown() {
+    const list = document.getElementById('notificationsDropdownList');
+    if (!list) return;
+    
+    if (notificationsHistory.length === 0) {
+        list.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs">لا توجد إشعارات جديدة</div>';
+        return;
+    }
+    
+    // Render last 5
+    const latest5 = notificationsHistory.slice(0, 5);
+    list.innerHTML = latest5.map((data, i) => `
+        <div class="flex gap-3 p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${i === 0 ? 'bg-primary/5' : ''}">
+            <div class="h-9 w-9 shrink-0 rounded-full flex items-center justify-center ${data.bg} relative" style="padding: 6px;">
+                ${data.icon}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex justify-between items-center mb-0.5">
+                    <h4 class="text-[12px] font-bold text-slate-800 truncate">${data.name}</h4>
+                    <span class="text-[10px] text-slate-400 whitespace-nowrap">الآن</span>
+                </div>
+                <p class="text-[11px] text-slate-500 line-clamp-2 leading-snug">${data.text}</p>
+            </div>
+            ${i === 0 ? '<span class="h-2 w-2 rounded-full bg-primary shrink-0 self-center"></span>' : ''}
+        </div>
+    `).join('');
+}
+
 function showRandomNotification() {
     const data = notificationData[Math.floor(Math.random() * notificationData.length)];
     const container = document.getElementById('toastContainer');
     if (!container) return;
     
-    // Check Limit
-    if (unreadCount >= 50) {
+    // Add to history and update dropdown
+    notificationsHistory.unshift(data);
+    renderNotificationsDropdown();
+    
+    // Check Limit for simulation
+    if (notificationsHistory.length >= 50) {
         if (window.simulatorInterval) clearInterval(window.simulatorInterval);
-        return; // Stop generating notifications after 50
     }
     
     // Update Badge
     unreadCount++;
     const badge = document.getElementById('unreadMessagesCount');
-    if (badge) {
+    if (badge && document.getElementById('notificationsDropdown').classList.contains('hidden')) {
         badge.textContent = unreadCount;
         badge.classList.remove('scale-0');
-        badge.classList.add('scale-100');
-        badge.classList.add('scale-125');
+        badge.classList.add('scale-100', 'scale-125');
         setTimeout(() => badge.classList.remove('scale-125'), 300);
+    } else {
+        unreadCount = 0; // Don't increment if dropdown is open
     }
     
-    // Create Toast
+    // Create Toast (improved aesthetics)
     const toastId = 'toast-' + Date.now();
-    const borderLeftColor = data.bg.split(' ')[0].replace('bg-', 'bg-').replace('100', '500'); // e.g., bg-emerald-500
+    const borderRightColor = data.bg.split(' ')[0].replace('bg-', 'bg-').replace('100', '500'); 
     const toastHTML = `
-        <div id="${toastId}" class="toast-card flex items-start gap-3 bg-white p-3.5 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto w-full relative overflow-hidden group">
-            <div class="absolute top-0 left-0 w-1 h-full ${borderLeftColor}"></div>
-            <div class="h-9 w-9 shrink-0 rounded-full flex items-center justify-center ${data.bg} relative z-10" style="padding: 6px;">
+        <div id="${toastId}" class="toast-card flex items-start gap-3.5 bg-white p-4 rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-slate-200 transform transition-all duration-500 translate-x-12 opacity-0 pointer-events-auto w-[340px] relative overflow-hidden group">
+            <div class="absolute top-0 right-0 w-1.5 h-full ${borderRightColor}"></div>
+            <div class="h-11 w-11 shrink-0 rounded-2xl flex items-center justify-center ${data.bg} relative z-10 mr-1 shadow-sm border border-white/50" style="padding: 8px;">
                 ${data.icon}
             </div>
-            <div class="flex-1 min-w-0 relative z-10 pl-1">
-                <div class="flex justify-between items-start mb-0.5">
-                    <h4 class="text-[13px] font-bold text-slate-900 truncate">${data.name}</h4>
-                    <span class="text-[10px] font-bold text-slate-400 whitespace-nowrap bg-slate-50 px-1.5 py-0.5 rounded-md">الآن</span>
+            <div class="flex-1 min-w-0 relative z-10 pl-1 mt-0.5">
+                <div class="flex justify-between items-start mb-1">
+                    <h4 class="text-[14px] font-extrabold text-slate-900 truncate">${data.name}</h4>
+                    <span class="text-[10px] font-bold text-slate-500 whitespace-nowrap bg-slate-100 border border-slate-200/60 px-2 py-0.5 rounded-lg shadow-sm">الآن</span>
                 </div>
-                <p class="text-[11.5px] font-medium text-slate-600 line-clamp-2 leading-relaxed mt-1 pr-1">${data.text}</p>
+                <p class="text-[12.5px] font-semibold text-slate-600 line-clamp-2 leading-relaxed pr-2">${data.text}</p>
             </div>
-            <button onclick="this.closest('.toast-card').remove()" class="absolute top-2 left-2 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <button onclick="this.closest('.toast-card').remove()" class="absolute top-3 left-3 text-slate-400 hover:text-slate-800 bg-white hover:bg-slate-100 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all shadow-sm border border-transparent hover:border-slate-200 z-20">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
         </div>
     `;
@@ -532,25 +628,25 @@ function showRandomNotification() {
     container.insertAdjacentHTML('afterbegin', toastHTML);
     const toastEl = document.getElementById(toastId);
     
-    // Animate In
+    // Animate In (from right)
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-            toastEl.classList.remove('translate-y-10', 'opacity-0');
+            toastEl.classList.remove('translate-x-12', 'opacity-0');
         });
     });
     
-    // Remove after 3 seconds
+    // Remove after 4 seconds (to right)
     setTimeout(() => {
         if(toastEl) {
-            toastEl.classList.add('opacity-0', '-translate-x-full');
-            setTimeout(() => toastEl.remove(), 300);
+            toastEl.classList.add('opacity-0', 'translate-x-12');
+            setTimeout(() => toastEl.remove(), 500);
         }
-    }, 3000);
+    }, 4000);
 }
 
 // Start Simulator
 window.simulatorInterval = setInterval(showRandomNotification, 15000);
-
+setTimeout(showRandomNotification, 2000); // Trigger first
 </script>
 </body>
 </html>
