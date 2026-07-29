@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#0047BB">
+    <title>لوحة التحكم | الإعدادات والربط</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                colors: { primary: "#0047BB", "primary-transparent": "rgba(184,195,242,0.41)", gray: "#6b7280", "sidebar-text": "#27272a" },
+                fontFamily: { sans: ['"Helvetica Neue W23"','"Helvetica Neue"','Arial','sans-serif'] }
+            }}
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @font-face { font-family:"Helvetica Neue W23"; src:url("fonts/fonts/helvetica-neue-w23/HelveticaNeueW23-Reg.ttf") format("truetype"); font-weight:400; font-display:swap; }
+        @font-face { font-family:"Helvetica Neue W23"; src:url("fonts/fonts/helvetica-neue-w23/HelveticaNeueW23-Bd.ttf") format("truetype"); font-weight:700; font-display:swap; }
+        html,body { font-family:"Helvetica Neue W23","Helvetica Neue",Arial,sans-serif; user-select:none; }
+        :root { --sidebar-offset:270px; }
+        .sidebar-wrapper { width:var(--sidebar-offset); transition:width 500ms cubic-bezier(0.22,1,0.36,1); }
+        .sidebar-panel { transition:width 500ms cubic-bezier(0.22,1,0.36,1),box-shadow 500ms; will-change:width; }
+        .thin-scrollbar { scrollbar-width:thin; scrollbar-color:rgba(148,163,184,0.42) transparent; }
+        .thin-scrollbar::-webkit-scrollbar { width:4px; height:4px; }
+        .thin-scrollbar::-webkit-scrollbar-thumb { background-color:rgba(148,163,184,0.42); border-radius:999px; }
+        .svg-icon { display:inline-block; width:22px; height:22px; flex-shrink:0; background:currentColor; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
+        .topbar-fixed { position:fixed; top:0; z-index:40; left:0; right:var(--sidebar-offset); padding:8px 16px 6px; background:rgba(249,250,251,0.95); transition:right 500ms cubic-bezier(0.22,1,0.36,1); }
+        .brand-icon { width:20px; height:20px; flex-shrink:0; }
+        .brand-icon-lg { width:28px; height:28px; flex-shrink:0; }
+        .add-btn { transition: all 0.2s ease; }
+        .add-btn:hover { transform: scale(1.08); box-shadow: 0 2px 8px rgba(0,71,187,0.18); }
+        
+        .tab-content { display:none; }
+        .tab-content.active { display:block; animation:fadeIn 0.3s ease; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
+        .toggle-track { position:relative; width:36px; height:20px; border-radius:999px; background:#cbd5e1; cursor:pointer; transition:background 0.2s; }
+        .toggle-track.on { background:#0047BB; }
+        .toggle-track .toggle-thumb { position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.15); transition:transform 0.2s; }
+        .toggle-track.on .toggle-thumb { transform:translateX(16px); }
+
+        .settings-card { transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s; }
+        .settings-card:hover { box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.06); border-color: #cbd5e1; }
+        
+        .card-arrow { transition: transform 0.3s ease; }
+    </style>
+</head>
+<body class="bg-[#f4f7f9] overflow-x-hidden">
+<div class="min-h-screen w-full md:flex md:items-start overflow-x-hidden">
+
+    <!-- ============ SIDEBAR ============ -->
+    <div class="sidebar-wrapper hidden md:block md:h-screen md:shrink-0" id="sidebarWrapper">
+        <div class="fixed top-0 z-50 h-screen right-0">
+            <div class="sidebar-panel h-screen bg-white shadow-sm border-l border-slate-100/70 flex flex-col rounded-sm" id="sidebarPanel" style="width:270px"
+                 onmouseenter="onSidebarHover(true)" onmouseleave="onSidebarHover(false)">
+
+                <div class="flex h-[70px] items-center justify-between border-b border-slate-100 px-4 transition-[padding] duration-300" id="sidebarHeader">
+                    <div class="flex flex-1 items-center">
+                        <div class="relative transition-all duration-300 mx-auto h-10 w-28" id="logoContainer">
+                            <img src="logo.png" alt="Logo" class="h-full w-full object-contain" onerror="this.parentElement.innerHTML='<span class=\'text-primary font-bold text-lg\'>شات ووت</span>'">
+                        </div>
+                    </div>
+                    <button onclick="togglePin()" class="relative -translate-y-[3px] inline-flex h-5 w-5 cursor-pointer items-center justify-center rounded-full border border-gray/40 transition-colors hover:border-slate-500">
+                        <span class="h-1.5 w-1.5 rounded-full bg-gray" id="pinDot"></span>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto thin-scrollbar" dir="rtl" id="sidebarNav">
+                    <nav class="p-2.5">
+                        <div class="mb-1" id="sidebarExpandedLabel"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">الرئيسية</span></div>
+                        <div class="w-full space-y-0.5 mb-3" id="navItemsMain"></div>
+                        <div class="flex items-center justify-between px-2 mb-1" id="sidebarChannelsLabel">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">القنوات</span>
+                            <button onclick="openAddPlatformModal()" class="add-btn inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white cursor-pointer" title="إضافة قناة جديدة">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            </button>
+                        </div>
+                        <div class="w-full space-y-0.5 mb-3" id="navItemsChannels"></div>
+                        <div class="mb-1" id="sidebarSystemLabel"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">النظام</span></div>
+                        <div class="w-full space-y-0.5" id="navItemsSystem"></div>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MAIN ============ -->
+    <div class="w-full min-w-0 p-2 md:p-3 lg:p-4">
+        <!-- TopBar -->
+        <div class="topbar-fixed">
+            <div dir="ltr" class="flex h-[54px] items-center justify-between rounded-sm bg-white px-2.5 shadow-sm sm:h-[58px] sm:px-3 md:px-4 flex-row">
+                <div class="flex min-w-0 items-center gap-2 sm:gap-3 flex-row">
+                    <div class="relative h-8 w-8 shrink-0 cursor-pointer sm:h-9 sm:w-9">
+                        <div class="relative h-full w-full overflow-hidden rounded-full border border-sky-300">
+                            <img src="avatar.png" alt="Avatar" class="rounded-full object-cover h-full w-full" onerror="this.src='https://placehold.co/36x36/0047BB/fff?text=م'">
+                        </div>
+                        <span class="absolute -bottom-0.5 end-0.5 z-10 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500"></span>
+                    </div>
+                    <div class="flex min-w-0 items-center gap-2 sm:gap-3 flex-row">
+                        <div class="flex items-center gap-0.5 sm:gap-1 flex-row">
+                            <button class="group relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-slate-500 hover:text-slate-700 hidden lg:inline-flex"><span class="svg-icon" style="-webkit-mask-image:url(svg-icons/help-circle.svg);mask-image:url(svg-icons/help-circle.svg)"></span></button>
+                            <button class="group relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-slate-500 hover:text-slate-700 hidden sm:inline-flex"><span class="svg-icon" style="-webkit-mask-image:url(svg-icons/star.svg);mask-image:url(svg-icons/star.svg)"></span></button>
+                            <button class="group relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-slate-500 hover:text-slate-700 hidden md:inline-flex"><span class="svg-icon" style="-webkit-mask-image:url(svg-icons/calendar.svg);mask-image:url(svg-icons/calendar.svg)"></span></button>
+                            <button class="group relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-slate-500 hover:text-slate-700"><i data-lucide="languages" class="h-[22px] w-[22px]"></i></button>
+                            <button class="group relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-slate-500 hover:text-primary transition-colors" title="الإشعارات">
+                                <i data-lucide="bell" class="h-[22px] w-[22px]"></i>
+                                <span class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white shadow-sm transition-transform duration-200 scale-0 origin-center" id="unreadMessagesCount">0</span>
+                            </button>
+                        </div>
+                        <div class="hidden items-center gap-2 text-slate-500 md:flex md:gap-6 flex-row">
+                            <span class="text-[0.95rem] font-medium leading-none" id="currentTime"></span>
+                            <i data-lucide="clock-3" class="h-[22px] w-[22px] shrink-0 self-center cursor-pointer"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button class="hidden cursor-pointer items-center gap-2 rounded-sm px-2 py-1 text-slate-400 hover:text-slate-600 md:inline-flex"><span class="text-[1rem] leading-none" dir="rtl">البحث عن سجلات...</span><i data-lucide="search" class="h-[24px] w-[24px] cursor-pointer"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-[3.5rem]">
+            <div class="flex items-center justify-between py-2 px-1 mb-2">
+                <div class="flex items-center gap-1 text-sm text-slate-600" id="breadcrumb">
+                    <span class="font-semibold text-primary">الرئيسية</span>
+                    <i data-lucide="chevron-left" class="h-3 w-3 text-primary"></i>
+                    <span class="font-semibold text-primary">الإعدادات والربط</span>
+                    <i data-lucide="chevron-left" class="h-3 w-3 text-primary"></i>
+                    <span class="font-semibold text-slate-800">قنوات التواصل</span>
+                </div>
+            </div>
+
+            <!-- Settings Main Area -->
+            <div class="mt-2" dir="rtl">
+
+                <!-- Professional Tabs -->
+                <div class="bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/70 flex gap-2 mb-6 overflow-x-auto w-full md:w-auto">
+                    <button class="tab-btn px-5 py-2.5 text-[13px] font-semibold rounded-lg bg-primary/10 text-primary transition-all whitespace-nowrap" onclick="switchTab('channels', this)">
+                        <span class="flex items-center gap-2"><i data-lucide="share-2" class="h-4 w-4"></i> قنوات التواصل</span>
+                    </button>
+                    <button class="tab-btn px-5 py-2.5 text-[13px] font-semibold rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all whitespace-nowrap" onclick="switchTab('ai', this)">
+                        <span class="flex items-center gap-2"><i data-lucide="sparkles" class="h-4 w-4"></i> نماذج الذكاء الاصطناعي</span>
+                    </button>
+                    <button class="tab-btn px-5 py-2.5 text-[13px] font-semibold rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all whitespace-nowrap" onclick="switchTab('chatbot', this)">
+                        <span class="flex items-center gap-2"><i data-lucide="bot" class="h-4 w-4"></i> إعدادات الشات بوت</span>
+                    </button>
+                    <button class="tab-btn px-5 py-2.5 text-[13px] font-semibold rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all whitespace-nowrap" onclick="switchTab('general', this)">
+                        <span class="flex items-center gap-2"><i data-lucide="settings" class="h-4 w-4"></i> إعدادات عامة</span>
+                    </button>
+                </div>
+
+                <!-- ======= TAB 1: Channels (قنوات التواصل) ======= -->
+                <div id="channels" class="tab-content active">
+                    <div class="mb-6 flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200/70 shadow-sm">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <i data-lucide="radio" class="h-5 w-5 text-primary"></i> ربط وتوصيل قنوات التواصل الاجتماعي
+                            </h2>
+                            <p class="text-[13px] text-slate-500 mt-0.5">اضغط على أي منصة لعرض وإدخال حقول التوثيق أو إخفائها.</p>
+                        </div>
+                        <button onclick="openAddPlatformModal()" class="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-[12px] font-bold hover:bg-blue-700 shadow-sm transition-all cursor-pointer">
+                            <i data-lucide="plus" class="h-4 w-4"></i> إضافة منصة جديده
+                        </button>
+                    </div>
+
+                    <div class="space-y-4" id="socialCardsContainer">
+                        <!-- WhatsApp Card -->
+                        <div class="settings-card bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
+                            <div class="p-4 flex items-center justify-between bg-gradient-to-l from-green-50/60 to-white cursor-pointer select-none" onclick="toggleCardCollapse('wa')">
+                                <div class="flex items-center gap-3.5">
+                                    <div class="h-11 w-11 rounded-xl bg-green-100/70 flex items-center justify-center border border-green-200/80" id="icon-whatsapp-card"></div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h3 class="text-[15px] font-bold text-slate-900">واتساب للأعمال</h3>
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200" id="status-whatsapp">غير متصل</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">WhatsApp Business Cloud API (Official Integration)</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[11px] font-semibold text-slate-400 hidden sm:inline-block">تعديل البيانات</span>
+                                    <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 card-arrow" id="card-arrow-wa">
+                                        <i data-lucide="chevron-down" class="h-4 w-4"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-5 border-t border-slate-100 space-y-4 hidden bg-slate-50/30" id="card-body-wa">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Phone Number ID <span class="text-red-500">*</span></label>
+                                        <input type="text" id="creds-wa-id" class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white" placeholder="مثال: 1029384756102">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Meta Access Token <span class="text-red-500">*</span></label>
+                                        <input type="password" id="creds-wa-token" class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white" placeholder="EAAGm...">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Webhook Verify Token</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="creds-wa-webhook" class="flex-1 border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white" placeholder="verify_token_123">
+                                        <button class="px-4 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 text-slate-600 font-semibold text-[12px] flex items-center gap-1.5" title="توليد توكن تلقائي"><i data-lucide="refresh-cw" class="h-3.5 w-3.5"></i> توليد</button>
+                                    </div>
+                                </div>
+                                <div class="pt-2 flex justify-end">
+                                    <button class="px-5 py-2 bg-green-600 text-white rounded-lg text-[12px] font-bold hover:bg-green-700 transition-colors shadow-sm flex items-center gap-2" onclick="saveSocialCreds('whatsapp')">
+                                        <i data-lucide="check-circle-2" class="h-4 w-4"></i> حفظ وتفعيل الربط
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Facebook Card -->
+                        <div class="settings-card bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
+                            <div class="p-4 flex items-center justify-between bg-gradient-to-l from-blue-50/60 to-white cursor-pointer select-none" onclick="toggleCardCollapse('fb')">
+                                <div class="flex items-center gap-3.5">
+                                    <div class="h-11 w-11 rounded-xl bg-blue-100/70 flex items-center justify-center border border-blue-200/80" id="icon-facebook-card"></div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h3 class="text-[15px] font-bold text-slate-900">ماسنجر فيسبوك</h3>
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" id="status-facebook">غير متصل</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Facebook Page Messaging API</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[11px] font-semibold text-slate-400 hidden sm:inline-block">تعديل البيانات</span>
+                                    <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 card-arrow" id="card-arrow-fb">
+                                        <i data-lucide="chevron-down" class="h-4 w-4"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-5 border-t border-slate-100 space-y-4 hidden bg-slate-50/30" id="card-body-fb">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Page ID <span class="text-red-500">*</span></label>
+                                        <input type="text" id="creds-fb-id" class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 bg-white" placeholder="1092837465">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Page Access Token <span class="text-red-500">*</span></label>
+                                        <input type="password" id="creds-fb-token" class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 bg-white">
+                                    </div>
+                                </div>
+                                <div class="pt-2 flex justify-end">
+                                    <button class="px-5 py-2 bg-blue-600 text-white rounded-lg text-[12px] font-bold hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2" onclick="saveSocialCreds('facebook')">
+                                        <i data-lucide="check-circle-2" class="h-4 w-4"></i> حفظ وتفعيل الربط
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instagram Card -->
+                        <div class="settings-card bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
+                            <div class="p-4 flex items-center justify-between bg-gradient-to-l from-pink-50/60 to-white cursor-pointer select-none" onclick="toggleCardCollapse('ig')">
+                                <div class="flex items-center gap-3.5">
+                                    <div class="h-11 w-11 rounded-xl bg-pink-100/70 flex items-center justify-center border border-pink-200/80" id="icon-instagram-card"></div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h3 class="text-[15px] font-bold text-slate-900">انستاجرام</h3>
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" id="status-instagram">غير متصل</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Instagram Direct Messages API</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[11px] font-semibold text-slate-400 hidden sm:inline-block">تعديل البيانات</span>
+                                    <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 card-arrow" id="card-arrow-ig">
+                                        <i data-lucide="chevron-down" class="h-4 w-4"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-5 border-t border-slate-100 space-y-4 hidden bg-slate-50/30" id="card-body-ig">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Instagram Business Account ID</label>
+                                        <input type="text" id="creds-ig-id" class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Access Token</label>
+                                        <input type="password" id="creds-ig-token" class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 bg-white">
+                                    </div>
+                                </div>
+                                <div class="pt-2 flex justify-end">
+                                    <button class="px-5 py-2 bg-gradient-to-r from-[#833ab4] to-[#fd1d1d] text-white rounded-lg text-[12px] font-bold hover:opacity-90 transition-opacity shadow-sm flex items-center gap-2" onclick="saveSocialCreds('instagram')">
+                                        <i data-lucide="check-circle-2" class="h-4 w-4"></i> حفظ وتفعيل الربط
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Telegram Card -->
+                        <div class="settings-card bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
+                            <div class="p-4 flex items-center justify-between bg-gradient-to-l from-sky-50/60 to-white cursor-pointer select-none" onclick="toggleCardCollapse('tg')">
+                                <div class="flex items-center gap-3.5">
+                                    <div class="h-11 w-11 rounded-xl bg-sky-100/70 flex items-center justify-center border border-sky-200/80" id="icon-telegram-card"></div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h3 class="text-[15px] font-bold text-slate-900">تليجرام</h3>
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" id="status-telegram">غير متصل</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Telegram Bot Integration</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[11px] font-semibold text-slate-400 hidden sm:inline-block">تعديل البيانات</span>
+                                    <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 card-arrow" id="card-arrow-tg">
+                                        <i data-lucide="chevron-down" class="h-4 w-4"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-5 border-t border-slate-100 space-y-4 hidden bg-slate-50/30" id="card-body-tg">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Bot Token</label>
+                                        <input type="password" id="creds-tg-token" class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 bg-white" placeholder="123456:ABC-DEF...">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Bot Username</label>
+                                        <input type="text" id="creds-tg-username" class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 bg-white" placeholder="@mycompany_bot">
+                                    </div>
+                                </div>
+                                <div class="pt-2 flex justify-end">
+                                    <button class="px-5 py-2 bg-[#26A5E4] text-white rounded-lg text-[12px] font-bold hover:bg-sky-600 transition-colors shadow-sm flex items-center gap-2" onclick="saveSocialCreds('telegram')">
+                                        <i data-lucide="check-circle-2" class="h-4 w-4"></i> حفظ وتفعيل الربط
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ======= TAB 2: AI Models (نماذج الذكاء الاصطناعي) ======= -->
+                <div id="ai" class="tab-content">
+                    <div class="mb-6 bg-white p-4 rounded-xl border border-slate-200/70 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="cpu" class="h-5 w-5 text-primary"></i> ربط أشهر نماذج الذكاء الاصطناعي العالمية
+                        </h2>
+                        <p class="text-[13px] text-slate-500 mt-0.5">قم بإدخال المفاتيح البرمجية (API Keys) للنماذج المطلوبة للرد التلقائي.</p>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- OpenAI Section -->
+                        <div class="bg-white border border-slate-200/80 rounded-xl shadow-sm p-5">
+                            <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
+                                <div class="p-2 rounded-xl bg-slate-900 text-white flex items-center justify-center" id="logo-openai"></div>
+                                <div>
+                                    <h3 class="text-base font-bold text-slate-900">OpenAI Models</h3>
+                                    <p class="text-[11px] text-slate-500">GPT-4o, GPT-4o Mini, & o1-Mini</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <span class="font-bold text-sm text-slate-800">GPT-4o</span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" id="status-gpt4o">غير متصل</span>
+                                    </div>
+                                    <input type="password" id="apiKey-gpt4o" class="w-full border border-slate-300 rounded-lg p-2 text-[12px] outline-none focus:border-slate-800 bg-white mb-3" placeholder="sk-proj-...">
+                                    <button class="w-full py-2 bg-slate-900 text-white rounded-lg text-[12px] font-bold hover:bg-slate-800 transition-colors" onclick="saveAI('gpt4o')">تفعيل GPT-4o</button>
+                                </div>
+                                <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <span class="font-bold text-sm text-slate-800">GPT-4o Mini</span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" id="status-gpt4omini">غير متصل</span>
+                                    </div>
+                                    <input type="password" id="apiKey-gpt4omini" class="w-full border border-slate-300 rounded-lg p-2 text-[12px] outline-none focus:border-slate-800 bg-white mb-3" placeholder="sk-proj-...">
+                                    <button class="w-full py-2 bg-slate-900 text-white rounded-lg text-[12px] font-bold hover:bg-slate-800 transition-colors" onclick="saveAI('gpt4omini')">تفعيل GPT-4o Mini</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Google Gemini Section -->
+                        <div class="bg-white border border-slate-200/80 rounded-xl shadow-sm p-5">
+                            <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
+                                <div class="p-2 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center" id="logo-gemini"></div>
+                                <div>
+                                    <h3 class="text-base font-bold text-slate-900">Google Gemini AI</h3>
+                                    <p class="text-[11px] text-slate-500">Gemini 2.5 Pro & Gemini 1.5 Flash</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <span class="font-bold text-sm text-slate-800">Gemini 2.5 Pro</span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" id="status-gemini25">غير متصل</span>
+                                    </div>
+                                    <input type="password" id="apiKey-gemini25" class="w-full border border-slate-300 rounded-lg p-2 text-[12px] outline-none focus:border-blue-600 bg-white mb-3" placeholder="AIzaSy...">
+                                    <button class="w-full py-2 bg-blue-600 text-white rounded-lg text-[12px] font-bold hover:bg-blue-700 transition-colors" onclick="saveAI('gemini25')">تفعيل Gemini 2.5 Pro</button>
+                                </div>
+                                <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <span class="font-bold text-sm text-slate-800">Gemini 1.5 Flash</span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" id="status-geminiflash">غير متصل</span>
+                                    </div>
+                                    <input type="password" id="apiKey-geminiflash" class="w-full border border-slate-300 rounded-lg p-2 text-[12px] outline-none focus:border-blue-600 bg-white mb-3" placeholder="AIzaSy...">
+                                    <button class="w-full py-2 bg-blue-600 text-white rounded-lg text-[12px] font-bold hover:bg-blue-700 transition-colors" onclick="saveAI('geminiflash')">تفعيل Gemini Flash</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Anthropic Claude Section -->
+                        <div class="bg-white border border-slate-200/80 rounded-xl shadow-sm p-5">
+                            <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
+                                <div class="p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center" id="logo-claude"></div>
+                                <div>
+                                    <h3 class="text-base font-bold text-slate-900">Anthropic Claude</h3>
+                                    <p class="text-[11px] text-slate-500">Claude 3.5 Sonnet & Claude 3 Haiku</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <span class="font-bold text-sm text-slate-800">Claude 3.5 Sonnet</span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" id="status-claude35">غير متصل</span>
+                                    </div>
+                                    <input type="password" id="apiKey-claude35" class="w-full border border-slate-300 rounded-lg p-2 text-[12px] outline-none focus:border-amber-600 bg-white mb-3" placeholder="sk-ant-...">
+                                    <button class="w-full py-2 bg-amber-600 text-white rounded-lg text-[12px] font-bold hover:bg-amber-700 transition-colors" onclick="saveAI('claude35')">تفعيل Claude Sonnet</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======= TAB 3: Chatbot Settings ======= -->
+                <div id="chatbot" class="tab-content">
+                    <div class="mb-6 bg-white p-4 rounded-xl border border-slate-200/70 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="bot" class="h-5 w-5 text-primary"></i> إعدادات سلوك الشات بوت والرد التلقائي
+                        </h2>
+                        <p class="text-[13px] text-slate-500 mt-0.5">التحكم في شروط وطريقة رد البوت الآلي على المحادثات المختلفة.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white border border-slate-200/80 rounded-xl shadow-sm p-6 space-y-6">
+                            <h3 class="text-base font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center gap-2">
+                                <i data-lucide="sliders" class="h-4 w-4 text-primary"></i> السلوكيات والتحكم
+                            </h3>
+                            <div class="space-y-5">
+                                <div class="flex items-center justify-between">
+                                    <div><span class="text-[13px] font-bold text-slate-800 block">تفعيل الرد التلقائي الشامل</span><p class="text-[11px] text-slate-500 mt-0.5">تفعيل الذكاء الاصطناعي للرد على الرسائل الجديدة في جميع القنوات.</p></div>
+                                    <div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div><span class="text-[13px] font-bold text-slate-800 block">التوقف عند التدخل البشري</span><p class="text-[11px] text-slate-500 mt-0.5">إيقاف الرد الآلي مؤقتاً عند كتابة الموظف لرسالة يدوية.</p></div>
+                                    <div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div><span class="text-[13px] font-bold text-slate-800 block">توقيع البوت التلقائي</span><p class="text-[11px] text-slate-500 mt-0.5">إضافة "رد بواسطة AI" أسفل كل رسالة يتم توليدها.</p></div>
+                                    <div class="toggle-track" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white border border-slate-200/80 rounded-xl shadow-sm p-6 space-y-4">
+                            <h3 class="text-base font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center gap-2">
+                                <i data-lucide="message-square" class="h-4 w-4 text-primary"></i> تعليمات السياق (Prompts)
+                            </h3>
+                            <div>
+                                <label class="block text-[12px] font-bold text-slate-700 mb-1.5">رسالة الترحيب التلقائية</label>
+                                <textarea class="w-full border border-slate-300 rounded-lg p-3 text-[13px] outline-none focus:border-primary resize-none h-20 bg-slate-50/40" placeholder="أهلاً بك! كيف يمكننا مساعدتك اليوم؟"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-[12px] font-bold text-slate-700 mb-1.5">التعليمات الأساسية للبوت (System Prompt)</label>
+                                <textarea class="w-full border border-slate-300 rounded-lg p-3 text-[13px] outline-none focus:border-primary resize-none h-24 bg-slate-50/40" placeholder="أنت موهوب في خدمة العملاء لشركة..."></textarea>
+                            </div>
+                            <button class="w-full py-2.5 bg-primary text-white rounded-lg text-[13px] font-bold hover:bg-blue-700 transition-colors shadow-sm">حفظ التغييرات</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======= TAB 4: General Settings ======= -->
+                <div id="general" class="tab-content">
+                    <div class="mb-6 bg-white p-4 rounded-xl border border-slate-200/70 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="settings" class="h-5 w-5 text-primary"></i> إعدادات عامة وتفضيلات النظام
+                        </h2>
+                        <p class="text-[13px] text-slate-500 mt-0.5">ضبط المظهر، اللغة، الإشعارات والتوقيت.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white border border-slate-200/80 rounded-xl shadow-sm p-6 space-y-4">
+                            <h3 class="text-base font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center gap-2">
+                                <i data-lucide="bell" class="h-4 w-4 text-primary"></i> الإشعارات والتنبيهات
+                            </h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[13px] font-bold text-slate-800">إشعارات المتصفح المنبثقة</span>
+                                    <div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[13px] font-bold text-slate-800">أصوات التنبيه للرسائل الجديدة</span>
+                                    <div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white border border-slate-200/80 rounded-xl shadow-sm p-6 space-y-4">
+                            <h3 class="text-base font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center gap-2">
+                                <i data-lucide="globe" class="h-4 w-4 text-primary"></i> اللغة والتوقيت
+                            </h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-[12px] font-bold text-slate-700 mb-1.5">لغة لوحة التحكم</label>
+                                    <select class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-primary bg-white"><option>العربية (Arabic)</option><option>English</option></select>
+                                </div>
+                                <div>
+                                    <label class="block text-[12px] font-bold text-slate-700 mb-1.5">المنطقة الزمنية</label>
+                                    <select class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-primary bg-white"><option>Asia/Riyadh (UTC+3)</option><option>Asia/Hebron (UTC+3)</option><option>Africa/Cairo (UTC+2)</option></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container for Notifications -->
+<div id="toastContainer" class="fixed bottom-6 left-6 z-[999] flex flex-col gap-3 pointer-events-none w-80"></div>
+
+<!-- Add Platform Modal -->
+<div id="addPlatformModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300" dir="rtl">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl p-6 transform scale-95 transition-transform duration-300 relative" id="modalCard">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+                <div class="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                    <i data-lucide="plus-circle" class="h-5 w-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">إضافة منصة تواصل جديدة</h3>
+                    <p class="text-[12px] text-slate-500">اختر المنصة وأدخل بيانات التوثيق الخاصة بها</p>
+                </div>
+            </div>
+            <button onclick="closeAddPlatformModal()" class="h-8 w-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+        </div>
+
+        <div class="py-4 space-y-4">
+            <label class="block text-[12px] font-bold text-slate-700">اختر نوع المنصة:</label>
+            <div class="grid grid-cols-3 gap-3">
+                <div onclick="selectPlatformType('tiktok', 'تيك توك')" class="platform-option border border-slate-200 hover:border-slate-800 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer transition-all hover:bg-slate-50 text-center">
+                    <div class="h-10 w-10 rounded-lg bg-black text-white flex items-center justify-center">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 1 1-5.2-1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V5.86a6.34 6.34 0 0 0-1-.08A6.34 6.34 0 1 0 15.7 12V8.71a8.21 8.21 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.88-.14z"/></svg>
+                    </div>
+                    <span class="text-[12px] font-bold text-slate-800">تيك توك</span>
+                </div>
+
+                <div onclick="selectPlatformType('twitter', 'تويتر / X')" class="platform-option border border-slate-200 hover:border-slate-800 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer transition-all hover:bg-slate-50 text-center">
+                    <div class="h-10 w-10 rounded-lg bg-slate-900 text-white flex items-center justify-center">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </div>
+                    <span class="text-[12px] font-bold text-slate-800">تويتر / X</span>
+                </div>
+
+                <div onclick="selectPlatformType('email', 'البريد الإلكتروني')" class="platform-option border border-slate-200 hover:border-red-500 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer transition-all hover:bg-slate-50 text-center">
+                    <div class="h-10 w-10 rounded-lg bg-red-500 text-white flex items-center justify-center">
+                        <i data-lucide="mail" class="h-5 w-5"></i>
+                    </div>
+                    <span class="text-[12px] font-bold text-slate-800">البريد الإلكتروني</span>
+                </div>
+
+                <div onclick="selectPlatformType('sms', 'رسائل SMS')" class="platform-option border border-slate-200 hover:border-green-600 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer transition-all hover:bg-slate-50 text-center">
+                    <div class="h-10 w-10 rounded-lg bg-green-600 text-white flex items-center justify-center">
+                        <i data-lucide="message-square" class="h-5 w-5"></i>
+                    </div>
+                    <span class="text-[12px] font-bold text-slate-800">رسائل SMS</span>
+                </div>
+
+                <div onclick="selectPlatformType('discord', 'ديسكورد')" class="platform-option border border-slate-200 hover:border-indigo-600 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer transition-all hover:bg-slate-50 text-center">
+                    <div class="h-10 w-10 rounded-lg bg-[#5865F2] text-white flex items-center justify-center">
+                        <i data-lucide="message-circle" class="h-5 w-5"></i>
+                    </div>
+                    <span class="text-[12px] font-bold text-slate-800">ديسكورد</span>
+                </div>
+
+                <div onclick="selectPlatformType('widget', 'ودجت الموقع')" class="platform-option border border-slate-200 hover:border-primary rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer transition-all hover:bg-slate-50 text-center">
+                    <div class="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center">
+                        <i data-lucide="globe" class="h-5 w-5"></i>
+                    </div>
+                    <span class="text-[12px] font-bold text-slate-800">ودجت الموقع</span>
+                </div>
+            </div>
+
+            <div id="platformFormFields" class="hidden space-y-3 pt-3 border-t border-slate-100">
+                <input type="hidden" id="selectedPlatformKey">
+                <input type="hidden" id="selectedPlatformName">
+
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">اسم الحساب / القناة <span class="text-red-500">*</span></label>
+                    <input type="text" id="newPlatformTitle" class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-primary bg-slate-50/50" placeholder="مثال: حساب تيك توك الرسمي">
+                </div>
+
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">API Key / Token <span class="text-red-500">*</span></label>
+                    <input type="password" id="newPlatformToken" class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none focus:border-primary bg-slate-50/50" placeholder="أدخل مفتاح الربط الخاص بالمنصة...">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
+            <button onclick="closeAddPlatformModal()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-[12px] font-bold hover:bg-slate-200 transition-colors">إلغاء</button>
+            <button onclick="submitNewPlatform()" class="px-5 py-2 bg-primary text-white rounded-lg text-[12px] font-bold hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-1.5">
+                <i data-lucide="check" class="h-4 w-4"></i> حفظ وتفعيل
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Brand SVG Icons
+const BRAND_ICONS = {
+    whatsapp: `<svg class="brand-icon-lg" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`,
+    facebook: `<svg class="brand-icon-lg" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`,
+    instagram: `<svg class="brand-icon-lg" viewBox="0 0 24 24" fill="url(#ig-grad)"><defs><radialGradient id="ig-grad" cx="30%" cy="107%" r="150%"><stop offset="0%" stop-color="#fdf497"/><stop offset="5%" stop-color="#fdf497"/><stop offset="45%" stop-color="#fd5949"/><stop offset="60%" stop-color="#d6249f"/><stop offset="90%" stop-color="#285AEB"/></radialGradient></defs><path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678a6.162 6.162 0 100 12.324 6.162 6.162 0 100-12.324zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405a1.441 1.441 0 11-2.882 0 1.441 1.441 0 012.882 0z"/></svg>`,
+    telegram: `<svg class="brand-icon-lg" viewBox="0 0 24 24" fill="#26A5E4"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`,
+    tiktok: `<svg class="brand-icon-lg" viewBox="0 0 24 24" fill="#000"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 1 1-5.2-1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V5.86a6.34 6.34 0 0 0-1-.08A6.34 6.34 0 1 0 15.7 12V8.71a8.21 8.21 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.88-.14z"/></svg>`,
+    twitter: `<svg class="brand-icon-lg" viewBox="0 0 24 24" fill="#0f1419"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+    openai: `<svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.535-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3423 8.7556a4.466 4.466 0 0 1 2.3555-1.9806V12.38a.7665.7665 0 0 0 .388.6766l5.8144 3.3543-2.0201 1.1686a.0757.0757 0 0 1-.071 0l-4.8303-2.7913A4.4944 4.4944 0 0 1 2.3423 8.7556zm16.0963 3.8558L12.5958 9.2429l2.02-1.1639a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6767 8.1042v-5.6062a.7806.7806 0 0 0-.3974-.657zm2.0107-3.0231l-.1419-.0852-4.7735-2.7582a.7712.7712 0 0 0-.7806 0L8.9105 10.1135V7.7811a.0804.0804 0 0 1 .0332-.0615l4.8303-2.7913a4.5087 4.5087 0 0 1 6.6805 4.6657zm-12.641-4.149a4.4755 4.4755 0 0 1 2.8764 1.0408l-.1419.0804-4.7783 2.7582a.7948.7948 0 0 0-.3927.6813v6.7369l-2.02-1.1686a.071.071 0 0 1-.038-.052V9.9261a4.504 4.504 0 0 1 4.4945-4.4944zm.7003 5.4831l2.9113-1.68 2.9114 1.68v3.359l-2.9114 1.68-2.9113-1.68z"/></svg>`,
+    gemini: `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none"><path d="M12 0C12 6.62742 6.62742 12 0 12C6.62742 12 12 17.3726 12 24C12 17.3726 17.3726 12 24 12C17.3726 12 12 6.62742 12 0Z" fill="url(#gemini-grad)"/><defs><linearGradient id="gemini-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#4285F4"/><stop offset="0.5" stop-color="#9B51E0"/><stop offset="1" stop-color="#E91E63"/></linearGradient></defs></svg>`,
+    claude: `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="#D97706"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm1 14.5h-2v-2h2v2zm0-4h-2V7h2v5.5z"/></svg>`
+};
+
+// Insert Icons into Settings Cards
+document.getElementById('icon-whatsapp-card').innerHTML = BRAND_ICONS.whatsapp;
+document.getElementById('icon-facebook-card').innerHTML = BRAND_ICONS.facebook;
+document.getElementById('icon-instagram-card').innerHTML = BRAND_ICONS.instagram;
+document.getElementById('icon-telegram-card').innerHTML = BRAND_ICONS.telegram;
+
+document.getElementById('logo-openai').innerHTML = BRAND_ICONS.openai;
+document.getElementById('logo-gemini').innerHTML = BRAND_ICONS.gemini;
+document.getElementById('logo-claude').innerHTML = BRAND_ICONS.claude;
+
+// Modal Logic
+function openAddPlatformModal(){
+    const modal = document.getElementById('addPlatformModal');
+    const card = document.getElementById('modalCard');
+    if(!modal) return;
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        if(card) { card.classList.remove('scale-95'); card.classList.add('scale-100'); }
+    }, 10);
+}
+
+function closeAddPlatformModal(){
+    const modal = document.getElementById('addPlatformModal');
+    const card = document.getElementById('modalCard');
+    if(!modal) return;
+    if(card) { card.classList.remove('scale-100'); card.classList.add('scale-95'); }
+    modal.classList.add('opacity-0');
+    setTimeout(() => { modal.classList.add('hidden'); }, 300);
+}
+
+function selectPlatformType(key, name){
+    document.getElementById('selectedPlatformKey').value = key;
+    document.getElementById('selectedPlatformName').value = name;
+    document.getElementById('platformFormFields').classList.remove('hidden');
+    document.querySelectorAll('.platform-option').forEach(el => el.classList.remove('ring-2', 'ring-primary', 'bg-primary/5'));
+    event.currentTarget.classList.add('ring-2', 'ring-primary', 'bg-primary/5');
+}
+
+function submitNewPlatform(){
+    const key = document.getElementById('selectedPlatformKey').value;
+    const name = document.getElementById('selectedPlatformName').value;
+    const title = document.getElementById('newPlatformTitle').value.trim();
+    const token = document.getElementById('newPlatformToken').value.trim();
+
+    if(!key || !title || !token) {
+        alert('الرجاء اختيار المنصة وتعبئة جميع الحقول المطلوبة.');
+        return;
+    }
+
+    let custom = JSON.parse(localStorage.getItem('custom_channels') || '[]');
+    custom.push({ id: Date.now(), key, name: title, type: name, token });
+    localStorage.setItem('custom_channels', JSON.stringify(custom));
+
+    closeAddPlatformModal();
+    alert('تمت إضافة المنصة الجديدة بنجاح!');
+    location.reload();
+}
+
+// Sidebar Logic
+const EXPANDED=270, COLLAPSED=64;
+let isPinned=true, isHovered=false;
+function getShouldExpand(){return isPinned||isHovered}
+
+function applySidebarState(){
+    const expand=getShouldExpand(), w=expand?EXPANDED:COLLAPSED;
+    document.documentElement.style.setProperty('--sidebar-offset',w+'px');
+    document.getElementById('sidebarWrapper').style.width=w+'px';
+    document.getElementById('sidebarPanel').style.width=w+'px';
+    const compact=!expand;
+    document.getElementById('sidebarHeader').style.padding=compact?'0 8px':'0 16px';
+    const logo=document.getElementById('logoContainer');
+    logo.className=compact?'relative transition-all duration-300 h-7 w-7':'relative transition-all duration-300 mx-auto h-10 w-28';
+    document.getElementById('pinDot').style.display=isPinned?'inline-block':'none';
+    ['sidebarExpandedLabel','sidebarChannelsLabel','sidebarSystemLabel'].forEach(id=>{
+        document.getElementById(id).style.display=compact?'none':'';
+    });
+    renderNav(compact);
+}
+function togglePin(){isPinned=!isPinned;isHovered=false;applySidebarState()}
+function onSidebarHover(h){if(isPinned)return;isHovered=h;applySidebarState()}
+
+function navItem(container, item, compact){
+    if(item.divider){container.innerHTML+='<hr class="border-slate-100 my-1.5">';return;}
+    const isAct=item.active||false;
+    const cls=isAct?'bg-primary text-white':'hover:bg-slate-50';
+    const textCls=isAct?'text-white':'text-sidebar-text';
+    const oc=item.onclick?`onclick="${item.onclick}"`:'';
+    if(compact){
+        container.innerHTML+=`<div class="w-full"><a href="${item.href}" ${oc} class="w-full block cursor-pointer rounded-md px-2 py-2 transition-colors ${cls}" title="${item.label}"><div class="flex items-center justify-center">${item.brandIcon||`<i data-lucide="${item.icon}" style="width:18px;height:18px;" class="${isAct?'text-white':'text-slate-500'}"></i>`}</div></a></div>`;
+    } else {
+        container.innerHTML+=`<div class="w-full"><a href="${item.href}" ${oc} class="w-full block cursor-pointer rounded-md px-2 py-[7px] transition-colors ${cls}"><div class="grid w-full grid-cols-[22px_1fr_auto] items-center gap-2.5"><span class="flex items-center justify-center">${item.brandIcon||`<i data-lucide="${item.icon}" style="width:16px;height:16px;" class="${isAct?'text-white':'text-slate-500'}"></i>`}</span><span class="text-right text-[12px] font-semibold leading-none ${textCls}">${item.label}</span>${item.badge?`<span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold ${isAct?'bg-white/20 text-white':'bg-red-100 text-red-600'}">${item.badge}</span>`:''}</div></a></div>`;
+    }
+}
+
+function renderNav(compact){
+    const main=document.getElementById('navItemsMain');
+    const channels=document.getElementById('navItemsChannels');
+    const system=document.getElementById('navItemsSystem');
+    main.innerHTML=''; channels.innerHTML=''; system.innerHTML='';
+    [{key:'inbox',label:'صندوق الوارد',icon:'inbox',href:'index.html',badge:'5'}].forEach(i=>navItem(main,i,compact));
+    
+    let defaultChannels = [
+        {key:'whatsapp',label:'واتساب',brandIcon:BRAND_ICONS.whatsapp,href:'index.html',badge:'2'},
+        {key:'facebook',label:'فيسبوك',brandIcon:BRAND_ICONS.facebook,href:'index.html',badge:'1'},
+        {key:'instagram',label:'انستاجرام',brandIcon:BRAND_ICONS.instagram,href:'index.html'},
+        {key:'telegram',label:'تليجرام',brandIcon:BRAND_ICONS.telegram,href:'index.html'},
+    ];
+
+    let custom = JSON.parse(localStorage.getItem('custom_channels') || '[]');
+    custom.forEach(c => {
+        let iconSvg = BRAND_ICONS[c.key] || `<i data-lucide="radio" class="h-4 w-4 text-primary"></i>`;
+        defaultChannels.push({
+            key: c.key,
+            label: c.name,
+            brandIcon: iconSvg,
+            href: 'index.html'
+        });
+    });
+
+    defaultChannels.forEach(i=>navItem(channels,i,compact));
+
+    [
+        {key:'settings',label:'الإعدادات والربط',icon:'settings',href:'settings.html',active:true},
+    ].forEach(i=>navItem(system,i,compact));
+    lucide.createIcons();
+}
+
+// Render dynamic settings cards from localStorage
+function renderCustomSettingsCards(){
+    const container = document.getElementById('socialCardsContainer');
+    if(!container) return;
+    let custom = JSON.parse(localStorage.getItem('custom_channels') || '[]');
+    custom.forEach((c, idx) => {
+        const cardId = 'custom-' + c.id;
+        const iconSvg = BRAND_ICONS[c.key] || `<i data-lucide="radio" class="h-6 w-6 text-primary"></i>`;
+        const cardHtml = `
+        <div class="settings-card bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
+            <div class="p-4 flex items-center justify-between bg-gradient-to-l from-slate-50 to-white cursor-pointer select-none" onclick="toggleCardCollapse('${cardId}')">
+                <div class="flex items-center gap-3.5">
+                    <div class="h-11 w-11 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-200">
+                        ${iconSvg}
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-[15px] font-bold text-slate-900">${c.name} (${c.type})</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">متصل</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Custom Channel Integration</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-[11px] font-semibold text-slate-400 hidden sm:inline-block">تعديل البيانات</span>
+                    <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 card-arrow" id="card-arrow-${cardId}">
+                        <i data-lucide="chevron-down" class="h-4 w-4"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="p-5 border-t border-slate-100 space-y-4 hidden bg-slate-50/30" id="card-body-${cardId}">
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1.5">API Token / Secret Key</label>
+                    <input type="password" value="${c.token}" class="w-full border border-slate-300 rounded-lg p-2.5 text-[13px] outline-none bg-white">
+                </div>
+                <div class="pt-2 flex justify-end">
+                    <button class="px-5 py-2 bg-primary text-white rounded-lg text-[12px] font-bold shadow-sm">حفظ والتحديث</button>
+                </div>
+            </div>
+        </div>`;
+        container.insertAdjacentHTML('beforeend', cardHtml);
+    });
+}
+
+// Collapsible Cards Toggle Function
+function toggleCardCollapse(cardId) {
+    const body = document.getElementById('card-body-' + cardId);
+    const arrow = document.getElementById('card-arrow-' + cardId);
+    if (!body) return;
+    if (body.classList.contains('hidden')) {
+        body.classList.remove('hidden');
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
+    } else {
+        body.classList.add('hidden');
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Settings Tabs Logic
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(el => { 
+        el.classList.remove('bg-primary/10', 'text-primary'); 
+        el.classList.add('text-slate-600'); 
+    });
+    btn.classList.remove('text-slate-600');
+    btn.classList.add('bg-primary/10', 'text-primary');
+
+    const bc = document.getElementById('breadcrumb');
+    if(bc) {
+        let tabName = btn.innerText.trim();
+        bc.innerHTML = '<span class="font-semibold text-primary">الرئيسية</span><i data-lucide="chevron-left" class="h-3 w-3 text-primary"></i><span class="font-semibold text-primary">الإعدادات والربط</span><i data-lucide="chevron-left" class="h-3 w-3 text-primary"></i><span class="font-semibold text-slate-800">' + tabName + '</span>';
+        lucide.createIcons();
+    }
+}
+
+function updateStatusUI(id, connected, color) {
+    const el = document.getElementById('status-' + id);
+    if (!el) return;
+    if (connected) { 
+        el.className = `text-[10px] font-bold px-2 py-0.5 rounded-full bg-${color}-100 text-${color}-700 border border-${color}-200`; 
+        el.textContent = 'متصل'; 
+    } else { 
+        el.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200'; 
+        el.textContent = 'غير متصل'; 
+    }
+}
+function saveAI(provider) {
+    const input = document.getElementById('apiKey-' + provider);
+    if (!input || !input.value.trim()) { alert('الرجاء إدخال المفتاح أولاً'); return; }
+    localStorage.setItem('ai_' + provider, input.value.trim());
+    updateStatusUI(provider, true, provider.includes('gpt') ? 'emerald' : 'blue');
+    alert('تم حفظ إعدادات النموذج بنجاح!');
+}
+function saveSocialCreds(platform) {
+    const prefix = { whatsapp:'wa', facebook:'fb', instagram:'ig', telegram:'tg' }[platform];
+    const colors = { whatsapp:'emerald', facebook:'blue', instagram:'pink', telegram:'sky' };
+    const token = document.getElementById('creds-' + prefix + '-token');
+    if (token && !token.value.trim()) { alert('الرجاء إدخال البيانات المطلوبة'); return; }
+    if (token) localStorage.setItem('social_token_' + platform, token.value.trim());
+    updateStatusUI(platform, true, colors[platform]);
+    alert('تم حفظ وتفعيل الربط بنجاح!');
+}
+
+// Time
+function updateTime(){const n=new Date(),d=n.toLocaleDateString("en-GB").replace(/\//g,"-"),t=n.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",second:"2-digit"});const el=document.getElementById('currentTime');if(el)el.textContent=`${d} - ${t}`;}
+
+document.addEventListener('DOMContentLoaded',()=>{
+    applySidebarState();
+    renderCustomSettingsCards();
+    updateTime();
+    setInterval(updateTime,1000);
+    lucide.createIcons();
+
+    ['gpt4o','gpt4omini'].forEach(p => { if (localStorage.getItem('ai_' + p)) updateStatusUI(p, true, 'emerald'); });
+    ['gemini25'].forEach(p => { if (localStorage.getItem('ai_' + p)) updateStatusUI(p, true, 'blue'); });
+    const cols={ whatsapp:'emerald', facebook:'blue', instagram:'pink', telegram:'sky' };
+    ['whatsapp','facebook','instagram','telegram'].forEach(p => {
+        if (localStorage.getItem('social_token_' + p)) updateStatusUI(p, true, cols[p]);
+    });
+});
+
+// --- Toast Notification Simulator ---
+let unreadCount = 0;
+const notificationData = [
+    { name: "أحمد عبدالله", text: "مرحباً، هل يمكنني الاستفسار عن باقات الأسعار؟", platform: "whatsapp", icon: BRAND_ICONS.whatsapp, bg: "bg-emerald-100 text-emerald-600" },
+    { name: "سارة محمد", text: "شكراً لكم، تم استلام الطلب.", platform: "facebook", icon: BRAND_ICONS.facebook, bg: "bg-blue-100 text-blue-600" },
+    { name: "خالد سعيد", text: "لدي مشكلة في تسجيل الدخول لحسابي.", platform: "instagram", icon: BRAND_ICONS.instagram, bg: "bg-pink-100 text-pink-600" },
+    { name: "منى علي", text: "متى سيتم توفير المنتج مرة أخرى؟", platform: "telegram", icon: BRAND_ICONS.telegram, bg: "bg-sky-100 text-sky-600" }
+];
+
+function showRandomNotification() {
+    const data = notificationData[Math.floor(Math.random() * notificationData.length)];
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    
+    // Update Badge
+    unreadCount++;
+    const badge = document.getElementById('unreadMessagesCount');
+    if (badge) {
+        badge.textContent = unreadCount;
+        badge.classList.remove('scale-0');
+        badge.classList.add('scale-100');
+        badge.classList.add('scale-125');
+        setTimeout(() => badge.classList.remove('scale-125'), 300);
+    }
+    
+    // Create Toast
+    const toastId = 'toast-' + Date.now();
+    const borderLeftColor = data.bg.split(' ')[0].replace('bg-', 'bg-').replace('100', '500'); // e.g., bg-emerald-500
+    const toastHTML = `
+        <div id="${toastId}" class="toast-card flex items-start gap-3 bg-white p-3.5 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto w-full relative overflow-hidden group">
+            <div class="absolute top-0 left-0 w-1 h-full ${borderLeftColor}"></div>
+            <div class="h-9 w-9 shrink-0 rounded-full flex items-center justify-center ${data.bg} relative z-10" style="padding: 6px;">
+                ${data.icon}
+            </div>
+            <div class="flex-1 min-w-0 relative z-10 pl-1">
+                <div class="flex justify-between items-start mb-0.5">
+                    <h4 class="text-[13px] font-bold text-slate-900 truncate">${data.name}</h4>
+                    <span class="text-[10px] font-bold text-slate-400 whitespace-nowrap bg-slate-50 px-1.5 py-0.5 rounded-md">الآن</span>
+                </div>
+                <p class="text-[11.5px] font-medium text-slate-600 line-clamp-2 leading-relaxed mt-1 pr-1">${data.text}</p>
+            </div>
+            <button onclick="this.closest('.toast-card').remove()" class="absolute top-2 left-2 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('afterbegin', toastHTML);
+    const toastEl = document.getElementById(toastId);
+    
+    // Animate In
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            toastEl.classList.remove('translate-y-10', 'opacity-0');
+        });
+    });
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        if(toastEl) {
+            toastEl.classList.add('opacity-0', '-translate-x-full');
+            setTimeout(() => toastEl.remove(), 300);
+        }
+    }, 3000);
+}
+
+// Start Simulator
+setInterval(showRandomNotification, 15000);
+// Trigger first notification after 2 seconds for demo purposes
+setTimeout(showRandomNotification, 2000);
+
+</script>
+</body>
+</html>
